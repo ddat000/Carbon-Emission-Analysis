@@ -6,7 +6,7 @@
 
 ### Data Structure
 - The dataset consists of 4 tables containing information regarding carbon emissions generated during the production of goods.
-![Alt text](https://lms.swisscoding.edu.vn/pluginfile.php/13807/mod_label/intro/Database%20diagram.png)
+ ![Alt text](https://github.com/ddat000/Carbon-Emission-Analysis/blob/main/Database%20diagram.png)
 
 ### Tables' columns description
 - Table 'product_emissions'
