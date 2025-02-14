@@ -115,10 +115,6 @@ LIMIT 10;
 | 9  | France       | 
 | 10 | Germany      | 
 
-```sql
-
-```
-
 ❓ Questions to research
 
 - Which products contribute the most to carbon emissions?
@@ -183,7 +179,7 @@ SELECT
 	i_g.industry_group,
 	SUM(p_e.carbon_footprint_pcf) AS total_emissions
 FROM
- product_emissions p_e
+	product_emissions p_e
 	LEFT JOIN industry_groups i_g
 		ON p_e.industry_group_id = i_g.id
 GROUP BY 
@@ -211,7 +207,7 @@ SELECT
 	companies.company_name,
 	SUM(p_e.carbon_footprint_pcf) AS total_emissions
 FROM
- product_emissions p_e
+	product_emissions p_e
 	LEFT JOIN companies
 		ON p_e.company_id = companies.id
 GROUP BY 
@@ -239,7 +235,7 @@ SELECT
 	countries.country_name,
 	SUM(p_e.carbon_footprint_pcf) AS total_emissions
 FROM
- product_emissions p_e
+	product_emissions p_e
 	LEFT JOIN countries
 		ON p_e.country_id = countries.id
 GROUP BY 
