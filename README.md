@@ -33,9 +33,12 @@ Through this analysis, we hope to gain an understanding of the environmental imp
   - downstream_percent_total_pcf: The percentage of the total carbon footprint attributed to downstream activities.
 
 ```sql
-SELECT *
-FROM product_emissions
-LIMIT 10;
+SELECT
+    *
+FROM
+    product_emissions
+LIMIT
+    10;
 ```
 | id            | company_id | country_id | industry_group_id | year | product_name                                                    | weight_kg | carbon_footprint_pcf | upstream_percent_total_pcf                       | operations_percent_total_pcf                     | downstream_percent_total_pcf                     | 
 | ------------: | ---------: | ---------: | ----------------: | ---: | --------------------------------------------------------------: | --------: | -------------------: | -----------------------------------------------: | -----------------------------------------------: | -----------------------------------------------: | 
@@ -55,9 +58,12 @@ LIMIT 10;
   - industry_group: The name of the industry group, categorizing businesses within similar sectors based on their products or services offered.
 
 ```sql
-SELECT *
-FROM industry_groups
-LIMIT 10;
+SELECT
+    *
+FROM
+    industry_groups
+LIMIT
+    10;
 ```
 | id | industry_group                                                         | 
 | -: | ---------------------------------------------------------------------: | 
@@ -77,9 +83,12 @@ LIMIT 10;
   - company_name: The name of the company, identifying the specific organization within the dataset.
 
 ```sql
-SELECT *
-FROM companies
-LIMIT 10;
+SELECT
+    *
+FROM
+    companies
+LIMIT
+    10;
 ```
 | id | company_name                                   | 
 | -: | ---------------------------------------------: | 
@@ -98,9 +107,12 @@ LIMIT 10;
   - id: Unique identifier for each country.
   - country_name: The name of the country.
 ```sql
-SELECT *
-FROM countries
-LIMIT 10;
+SELECT
+    *
+FROM
+    countries
+LIMIT
+    10;
 ```
 | id | country_name | 
 | -: | -----------: | 
@@ -121,15 +133,16 @@ LIMIT 10;
   Top 10 products contribute the most to carbon emissions
 ```sql
 SELECT
- product_name,
- SUM(carbon_footprint_pcf) AS total_emissions
+    product_name,
+    SUM(carbon_footprint_pcf) AS total_emissions
 FROM
- product_emissions 
+    product_emissions
 GROUP BY
- product_name
+    product_name
 ORDER BY
- total_emissions DESC
-LIMIT 10;
+    total_emissions DESC
+LIMIT
+    10;
 ```
 | product_name                                                                                                                       | total_emissions | 
 | ---------------------------------------------------------------------------------------------------------------------------------: | --------------: | 
@@ -147,18 +160,18 @@ LIMIT 10;
 - What are the industry groups of these products?
 ```sql
 SELECT
-p_e.product_name,
-SUM(p_e.carbon_footprint_pcf) AS total_emissions,
-i_g.industry_group
+    p_e.product_name,
+    SUM(p_e.carbon_footprint_pcf) AS total_emissions,
+    i_g.industry_group
 FROM
-product_emissions p_e
-LEFT JOIN industry_groups i_g
-ON p_e.industry_group_id = i_g.id
+    product_emissions p_e
+    LEFT JOIN industry_groups i_g ON p_e.industry_group_id = i_g.id
 GROUP BY
-p_e.product_name
+    p_e.product_name
 ORDER BY
-total_emissions DESC
-LIMIT 10;
+    total_emissions DESC
+LIMIT
+    10;
 ```
 | product_name                                                                                                                       | total_emissions | industry_group                     | 
 | ---------------------------------------------------------------------------------------------------------------------------------: | --------------: | ---------------------------------: | 
@@ -175,18 +188,18 @@ LIMIT 10;
 
 - What are the industries with the highest contribution to carbon emissions?
 ```sql
-SELECT 
-i_g.industry_group,
-SUM(p_e.carbon_footprint_pcf) AS total_emissions
+SELECT
+    i_g.industry_group,
+    SUM(p_e.carbon_footprint_pcf) AS total_emissions
 FROM
-product_emissions p_e
-LEFT JOIN industry_groups i_g
-ON p_e.industry_group_id = i_g.id
-GROUP BY 
-i_g.industry_group
-ORDER BY 
-total_emissions DESC
-LIMIT 10;
+    product_emissions p_e
+    LEFT JOIN industry_groups i_g ON p_e.industry_group_id = i_g.id
+GROUP BY
+    i_g.industry_group
+ORDER BY
+    total_emissions DESC
+LIMIT
+    10;
 ```
 | industry_group                                   | total_emissions | 
 | -----------------------------------------------: | --------------: | 
@@ -203,18 +216,18 @@ LIMIT 10;
 
 - What are the companies with the highest contribution to carbon emissions?
 ```sql
-SELECT 
-companies.company_name,
-SUM(p_e.carbon_footprint_pcf) AS total_emissions
+SELECT
+    companies.company_name,
+    SUM(p_e.carbon_footprint_pcf) AS total_emissions
 FROM
-product_emissions p_e
-LEFT JOIN companies
-ON p_e.company_id = companies.id
-GROUP BY 
-companies.company_name
-ORDER BY 
-total_emissions DESC
-LIMIT 10;
+    product_emissions p_e
+    LEFT JOIN companies ON p_e.company_id = companies.id
+GROUP BY
+    companies.company_name
+ORDER BY
+    total_emissions DESC
+LIMIT
+    10;
 ```
 | company_name                            | total_emissions | 
 | --------------------------------------: | --------------: | 
@@ -231,18 +244,18 @@ LIMIT 10;
 
 - What are the countries with the highest contribution to carbon emissions?
 ```sql
-SELECT 
-countries.country_name,
-SUM(p_e.carbon_footprint_pcf) AS total_emissions
+SELECT
+    countries.country_name,
+    SUM(p_e.carbon_footprint_pcf) AS total_emissions
 FROM
-product_emissions p_e
-LEFT JOIN countries
-ON p_e.country_id = countries.id
-GROUP BY 
-countries.country_name
-ORDER BY 
-total_emissions DESC
-LIMIT 10;
+    product_emissions p_e
+    LEFT JOIN countries ON p_e.country_id = countries.id
+GROUP BY
+    countries.country_name
+ORDER BY
+    total_emissions DESC
+LIMIT
+    10;
 ```
 | country_name | total_emissions | 
 | -----------: | --------------: | 
@@ -259,15 +272,15 @@ LIMIT 10;
 
 - What is the trend of carbon footprints (PCFs) over the years?
 ```sql
-SELECT 
-year,
-SUM(carbon_footprint_pcf) AS total_emissions
-FROM 
-product_emissions 
-GROUP BY 
-year
-ORDER BY 
-year ASC;
+SELECT
+    year,
+    SUM(carbon_footprint_pcf) AS total_emissions
+FROM
+    product_emissions
+GROUP BY
+    year
+ORDER BY
+    year ASC;
 ```
 | year | total_emissions | 
 | ---: | --------------: | 
@@ -279,37 +292,61 @@ year ASC;
 
 - Which industry groups has demonstrated the most notable decrease in carbon footprints (PCFs) over time?
 ```sql
-WITH yearly_averages AS (
-  SELECT 
-    ig.industry_group,
-    pe.year,
-    AVG(pe.carbon_footprint_pcf) as avg_carbon_footprint,
-    COUNT(*) as product_count
-  FROM product_emissions pe
-  JOIN industry_groups ig ON pe.industry_group_id = ig.id
-  GROUP BY ig.industry_group, pe.year
-),
-year_over_year_change AS (
-  SELECT 
+WITH
+    yearly_averages AS (
+        SELECT
+            ig.industry_group,
+            pe.year,
+            AVG(pe.carbon_footprint_pcf) as avg_carbon_footprint,
+            COUNT(*) as product_count
+        FROM
+            product_emissions pe
+            JOIN industry_groups ig ON pe.industry_group_id = ig.id
+        GROUP BY
+            ig.industry_group,
+            pe.year
+    ),
+    year_over_year_change AS (
+        SELECT
+            industry_group,
+            year,
+            avg_carbon_footprint,
+            product_count,
+            LAG(avg_carbon_footprint) OVER (
+                PARTITION BY industry_group
+                ORDER BY
+                    year
+            ) as prev_year_footprint,
+            (
+                (
+                    avg_carbon_footprint - LAG(avg_carbon_footprint) OVER (
+                        PARTITION BY industry_group
+                        ORDER BY
+                            year
+                    )
+                ) / LAG(avg_carbon_footprint) OVER (
+                    PARTITION BY industry_group
+                    ORDER BY
+                        year
+                ) * 100
+            ) as percentage_change
+        FROM
+            yearly_averages
+    )
+SELECT
     industry_group,
     year,
-    avg_carbon_footprint,
+    ROUND(avg_carbon_footprint, 2) as avg_carbon_footprint,
     product_count,
-    LAG(avg_carbon_footprint) OVER (PARTITION BY industry_group ORDER BY year) as prev_year_footprint,
-    ((avg_carbon_footprint - LAG(avg_carbon_footprint) OVER (PARTITION BY industry_group ORDER BY year)) / 
-     LAG(avg_carbon_footprint) OVER (PARTITION BY industry_group ORDER BY year) * 100) as percentage_change
-  FROM yearly_averages
-)
-SELECT 
-  industry_group,
-  year,
-  ROUND(avg_carbon_footprint, 2) as avg_carbon_footprint,
-  product_count,
-  ROUND(percentage_change, 2) as year_over_year_change_percent
-FROM year_over_year_change
-WHERE percentage_change IS NOT NULL
-  AND product_count >= 5  -- Filter for industries with significant sample size
-ORDER BY percentage_change ASC, year DESC;
+    ROUND(percentage_change, 2) as year_over_year_change_percent
+FROM
+    year_over_year_change
+WHERE
+    percentage_change IS NOT NULL
+    AND product_count >= 5 -- Filter for industries with significant sample size
+ORDER BY
+    percentage_change ASC,
+    year DESC;
 ```
 | industry_group                     | year | avg_carbon_footprint | product_count | year_over_year_change_percent | 
 | ---------------------------------: | ---: | -------------------: | ------------: | ----------------------------: | 
