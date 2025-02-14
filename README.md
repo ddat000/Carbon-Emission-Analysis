@@ -1,4 +1,4 @@
-# Carbon-Emission-Analysis
+#Carbon - Emission - Analysis
 
 ## Introduction
 
@@ -151,9 +151,9 @@ SELECT
 	SUM(p_e.carbon_footprint_pcf) AS total_emissions,
 	i_g.industry_group
 FROM
- product_emissions p_e
+	product_emissions p_e
 	LEFT JOIN industry_groups i_g
-		ON p_e.industry_group_id = i_g.id
+	ON p_e.industry_group_id = i_g.id
 GROUP BY
  p_e.product_name
 ORDER BY
@@ -334,4 +334,4 @@ ORDER BY percentage_change ASC, year DESC;
 | Technology Hardware & Equipment    | 2017 | 788.34               | 35            | 1108.19                       | 
 | Software & Services                | 2014 | 29.20                | 5             | 1846.67                       | 
 | Capital Goods                      | 2017 | 18989.80             | 5             | 2285.28                       | 
-| Software & Services                | 2015 | 1523.73              | 15            | 5118.26                       | 
+| Software & Services                | 2015 | 1523.73              | 15            | 5118.26                       |
