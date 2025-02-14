@@ -297,8 +297,8 @@ WITH
         SELECT
             ig.industry_group,
             pe.year,
-            AVG(pe.carbon_footprint_pcf) as avg_carbon_footprint,
-            COUNT(*) as product_count
+            AVG(pe.carbon_footprint_pcf) AS avg_carbon_footprint,
+            COUNT(*) AS product_count
         FROM
             product_emissions pe
             JOIN industry_groups ig ON pe.industry_group_id = ig.id
@@ -316,7 +316,7 @@ WITH
                 PARTITION BY industry_group
                 ORDER BY
                     year
-            ) as prev_year_footprint,
+            ) AS prev_year_footprint,
             (
                 (
                     avg_carbon_footprint - LAG(avg_carbon_footprint) OVER (
@@ -329,16 +329,16 @@ WITH
                     ORDER BY
                         year
                 ) * 100
-            ) as percentage_change
+            ) AS percentage_change
         FROM
             yearly_averages
     )
 SELECT
     industry_group,
     year,
-    ROUND(avg_carbon_footprint, 2) as avg_carbon_footprint,
+    ROUND(avg_carbon_footprint, 2) AS avg_carbon_footprint,
     product_count,
-    ROUND(percentage_change, 2) as year_over_year_change_percent
+    ROUND(percentage_change, 2) AS year_over_year_change_percent
 FROM
     year_over_year_change
 WHERE
