@@ -177,7 +177,7 @@ LIMIT 10;
 ```sql
 SELECT 
 	i_g.industry_group,
-	SUM(p_e.carbon_footprint_pcf) AS total_emissions
+  SUM(p_e.carbon_footprint_pcf) AS total_emissions
 FROM
 	product_emissions p_e
 	LEFT JOIN industry_groups i_g
