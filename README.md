@@ -116,22 +116,7 @@ LIMIT 10;
 | 10 | Germany      | 
 
 ```sql
-SELECT 
-	p_e.product_name,
-	SUM(p_e.carbon_footprint_pcf) AS total_emissions
-FROM 
-	product_emissions p_e
-	LEFT JOIN industry_groups i_g
-		ON p_e.industry_group_id = i_g.id
-	LEFT JOIN companies
-		ON p_e.company_id = companies.id 
-	LEFT JOIN countries
-		ON p_e.country_id = countries.id
-GROUP BY 
-	p_e.product_name
-ORDER BY 
-	total_emissions DESC
-LIMIT 10;
+
 ```
 
 ❓ Questions to research
