@@ -146,18 +146,18 @@ LIMIT 10;
 
 - What are the industry groups of these products?
 ```sql
-SELECT 
-	p_e.product_name,
-	SUM(p_e.carbon_footprint_pcf) AS total_emissions,
-	i_g.industry_group
+SELECT
+p_e.product_name,
+SUM(p_e.carbon_footprint_pcf) AS total_emissions,
+i_g.industry_group
 FROM
-	product_emissions p_e
-	LEFT JOIN industry_groups i_g
-	ON p_e.industry_group_id = i_g.id
+product_emissions p_e
+LEFT JOIN industry_groups i_g
+ON p_e.industry_group_id = i_g.id
 GROUP BY
- p_e.product_name
+p_e.product_name
 ORDER BY
- total_emissions DESC
+total_emissions DESC
 LIMIT 10;
 ```
 | product_name                                                                                                                       | total_emissions | industry_group                     | 
@@ -176,16 +176,16 @@ LIMIT 10;
 - What are the industries with the highest contribution to carbon emissions?
 ```sql
 SELECT 
-	i_g.industry_group,
-  SUM(p_e.carbon_footprint_pcf) AS total_emissions
+i_g.industry_group,
+SUM(p_e.carbon_footprint_pcf) AS total_emissions
 FROM
-	product_emissions p_e
-	LEFT JOIN industry_groups i_g
-		ON p_e.industry_group_id = i_g.id
+product_emissions p_e
+LEFT JOIN industry_groups i_g
+ON p_e.industry_group_id = i_g.id
 GROUP BY 
-	i_g.industry_group
+i_g.industry_group
 ORDER BY 
-	total_emissions DESC
+total_emissions DESC
 LIMIT 10;
 ```
 | industry_group                                   | total_emissions | 
@@ -204,16 +204,16 @@ LIMIT 10;
 - What are the companies with the highest contribution to carbon emissions?
 ```sql
 SELECT 
-	companies.company_name,
-	SUM(p_e.carbon_footprint_pcf) AS total_emissions
+companies.company_name,
+SUM(p_e.carbon_footprint_pcf) AS total_emissions
 FROM
-	product_emissions p_e
-	LEFT JOIN companies
-		ON p_e.company_id = companies.id
+product_emissions p_e
+LEFT JOIN companies
+ON p_e.company_id = companies.id
 GROUP BY 
-	companies.company_name
+companies.company_name
 ORDER BY 
-	total_emissions DESC
+total_emissions DESC
 LIMIT 10;
 ```
 | company_name                            | total_emissions | 
@@ -232,16 +232,16 @@ LIMIT 10;
 - What are the countries with the highest contribution to carbon emissions?
 ```sql
 SELECT 
-	countries.country_name,
-	SUM(p_e.carbon_footprint_pcf) AS total_emissions
+countries.country_name,
+SUM(p_e.carbon_footprint_pcf) AS total_emissions
 FROM
-	product_emissions p_e
-	LEFT JOIN countries
-		ON p_e.country_id = countries.id
+product_emissions p_e
+LEFT JOIN countries
+ON p_e.country_id = countries.id
 GROUP BY 
-	countries.country_name
+countries.country_name
 ORDER BY 
-	total_emissions DESC
+total_emissions DESC
 LIMIT 10;
 ```
 | country_name | total_emissions | 
@@ -260,14 +260,14 @@ LIMIT 10;
 - What is the trend of carbon footprints (PCFs) over the years?
 ```sql
 SELECT 
-	year,
-	SUM(carbon_footprint_pcf) AS total_emissions
+year,
+SUM(carbon_footprint_pcf) AS total_emissions
 FROM 
-	product_emissions 
+product_emissions 
 GROUP BY 
-	year
+year
 ORDER BY 
-	year ASC;
+year ASC;
 ```
 | year | total_emissions | 
 | ---: | --------------: | 
