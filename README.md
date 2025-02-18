@@ -132,163 +132,429 @@ LIMIT
 - Which products contribute the most to carbon emissions?
   Top 10 products contribute the most to carbon emissions
 ```sql
-SELECT
-    product_name,
-    SUM(carbon_footprint_pcf) AS total_emissions
-FROM
-    product_emissions
-GROUP BY
-    product_name
-ORDER BY
-    total_emissions DESC
-LIMIT
-    10;
+SELECT 
+    pe.product_name,
+    c.company_name,
+    co.country_name,
+    ig.industry_group,
+    pe.year,
+    ROUND(pe.carbon_footprint_pcf, 2) as carbon_footprint_pcf,
+    -- Calculate emission breakdowns by type
+    ROUND(pe.upstream_percent_total_pcf, 1) as upstream_percent,
+    ROUND(pe.operations_percent_total_pcf, 1) as operations_percent,
+    ROUND(pe.downstream_percent_total_pcf, 1) as downstream_percent,
+    -- Add ranking
+    DENSE_RANK() OVER (ORDER BY pe.carbon_footprint_pcf DESC) as emission_rank
+FROM product_emissions pe
+JOIN companies c ON pe.company_id = c.id
+JOIN countries co ON pe.country_id = co.id
+JOIN industry_groups ig ON pe.industry_group_id = ig.id
+ORDER BY pe.carbon_footprint_pcf DESC
+LIMIT 10;
 ```
-| product_name                                                                                                                       | total_emissions | 
-| ---------------------------------------------------------------------------------------------------------------------------------: | --------------: | 
-| Wind Turbine G128 5 Megawats                                                                                                       | 3718044         | 
-| Wind Turbine G132 5 Megawats                                                                                                       | 3276187         | 
-| Wind Turbine G114 2 Megawats                                                                                                       | 1532608         | 
-| Wind Turbine G90 2 Megawats                                                                                                        | 1251625         | 
-| TCDE                                                                                                                               | 198150          | 
-| Land Cruiser Prado. FJ Cruiser. Dyna trucks. Toyoace.IMV def unit.                                                                 | 191687          | 
-| Retaining wall structure with a main wall (sheet pile): 136 tonnes of steel sheet piles and 4 tonnes of tierods per 100 meter wall | 167000          | 
-| Electric Motor                                                                                                                     | 160655          | 
-| Audi A6                                                                                                                            | 111282          | 
-| Average of all GM vehicles produced and used in the 10 year life-cycle.                                                            | 100621          | 
+| product_name                                                                                                                       | company_name                            | country_name | industry_group                     | year | carbon_footprint_pcf | upstream_percent | operations_percent | downstream_percent | emission_rank | 
+| ---------------------------------------------------------------------------------------------------------------------------------: | --------------------------------------: | -----------: | ---------------------------------: | ---: | -------------------: | ---------------: | -----------------: | -----------------: | ------------: | 
+| Wind Turbine G128 5 Megawats                                                                                                       | "Gamesa Corporación Tecnológica, S.A."  | Spain        | Electrical Equipment and Machinery | 2015 | 3718044              | 0                | 0                  | 0                  | 1             | 
+| Wind Turbine G132 5 Megawats                                                                                                       | "Gamesa Corporación Tecnológica, S.A."  | Spain        | Electrical Equipment and Machinery | 2015 | 3276187              | 0                | 0                  | 0                  | 2             | 
+| Wind Turbine G114 2 Megawats                                                                                                       | "Gamesa Corporación Tecnológica, S.A."  | Spain        | Electrical Equipment and Machinery | 2015 | 1532608              | 0                | 0                  | 0                  | 3             | 
+| Wind Turbine G90 2 Megawats                                                                                                        | "Gamesa Corporación Tecnológica, S.A."  | Spain        | Electrical Equipment and Machinery | 2015 | 1251625              | 0                | 0                  | 0                  | 4             | 
+| Land Cruiser Prado. FJ Cruiser. Dyna trucks. Toyoace.IMV def unit.                                                                 | "Hino Motors, Ltd."                     | Japan        | Automobiles & Components           | 2016 | 191687               | 2.9              | 0.2                | 96.8               | 5             | 
+| Retaining wall structure with a main wall (sheet pile): 136 tonnes of steel sheet piles and 4 tonnes of tierods per 100 meter wall | Arcelor Mittal                          | Luxembourg   | Materials                          | 2013 | 167000               | 0                | 0                  | 0                  | 6             | 
+| TCDE                                                                                                                               | "Mitsubishi Gas Chemical Company, Inc." | Japan        | Materials                          | 2017 | 99075                | 65               | 34.4               | 0.7                | 7             | 
+| TCDE                                                                                                                               | "Mitsubishi Gas Chemical Company, Inc." | Japan        | Materials                          | 2017 | 99075                | 65               | 34.4               | 0.7                | 7             | 
+| Mercedes-Benz GLE (GLE 500 4MATIC)                                                                                                 | Daimler AG                              | Germany      | Automobiles & Components           | 2016 | 91000                | 0                | 0                  | 0                  | 8             | 
+| Electric Motor                                                                                                                     | Weg S/A                                 | Brazil       | Capital Goods                      | 2014 | 87589                | 0                | 0                  | 100                | 9             | 
 
 - What are the industry groups of these products?
 ```sql
+WITH
+  industry_stats AS (
+    SELECT
+      ig.industry_group,
+      COUNT(*) as product_count,
+      ROUND(AVG(pe.carbon_footprint_pcf), 2) as avg_carbon_footprint,
+      ROUND(MIN(pe.carbon_footprint_pcf), 2) as min_carbon_footprint,
+      ROUND(MAX(pe.carbon_footprint_pcf), 2) as max_carbon_footprint,
+      ROUND(AVG(pe.upstream_percent_total_pcf), 1) as avg_upstream_percent,
+      ROUND(AVG(pe.operations_percent_total_pcf), 1) as avg_operations_percent,
+      ROUND(AVG(pe.downstream_percent_total_pcf), 1) as avg_downstream_percent
+    FROM
+      product_emissions pe
+      JOIN industry_groups ig ON pe.industry_group_id = ig.id
+    GROUP BY
+      ig.industry_group
+  )
 SELECT
-    p_e.product_name,
-    SUM(p_e.carbon_footprint_pcf) AS total_emissions,
-    i_g.industry_group
+  industry_group,
+  product_count,
+  avg_carbon_footprint,
+  min_carbon_footprint,
+  max_carbon_footprint,
+  avg_upstream_percent,
+  avg_operations_percent,
+  avg_downstream_percent,
+  RANK() OVER (
+    ORDER BY
+      avg_carbon_footprint DESC
+  ) as carbon_intensity_rank
 FROM
-    product_emissions p_e
-    LEFT JOIN industry_groups i_g ON p_e.industry_group_id = i_g.id
-GROUP BY
-    p_e.product_name
+  industry_stats
 ORDER BY
-    total_emissions DESC
-LIMIT
-    10;
+  avg_carbon_footprint DESC;
 ```
-| product_name                                                                                                                       | total_emissions | industry_group                     | 
-| ---------------------------------------------------------------------------------------------------------------------------------: | --------------: | ---------------------------------: | 
-| Wind Turbine G128 5 Megawats                                                                                                       | 3718044         | Electrical Equipment and Machinery | 
-| Wind Turbine G132 5 Megawats                                                                                                       | 3276187         | Electrical Equipment and Machinery | 
-| Wind Turbine G114 2 Megawats                                                                                                       | 1532608         | Electrical Equipment and Machinery | 
-| Wind Turbine G90 2 Megawats                                                                                                        | 1251625         | Electrical Equipment and Machinery | 
-| TCDE                                                                                                                               | 198150          | Materials                          | 
-| Land Cruiser Prado. FJ Cruiser. Dyna trucks. Toyoace.IMV def unit.                                                                 | 191687          | Automobiles & Components           | 
-| Retaining wall structure with a main wall (sheet pile): 136 tonnes of steel sheet piles and 4 tonnes of tierods per 100 meter wall | 167000          | Materials                          | 
-| Electric Motor                                                                                                                     | 160655          | Capital Goods                      | 
-| Audi A6                                                                                                                            | 111282          | Automobiles & Components           | 
-| Average of all GM vehicles produced and used in the 10 year life-cycle.                                                            | 100621          | Automobiles & Components           | 
+| industry_group                                                         | product_count | avg_carbon_footprint | min_carbon_footprint | max_carbon_footprint | avg_upstream_percent | avg_operations_percent | avg_downstream_percent | carbon_intensity_rank | 
+| ---------------------------------------------------------------------: | ------------: | -------------------: | -------------------: | -------------------: | -------------------: | ---------------------: | ---------------------: | --------------------: | 
+| Electrical Equipment and Machinery                                     | 11            | 891050.73            | 0                    | 3718044              | 4.5                  | 0.7                    | 22                     | 1                     | 
+| Automobiles & Components                                               | 73            | 35373.48             | 106                  | 191687               | 2                    | 0.6                    | 12.4                   | 2                     | 
+| "Pharmaceuticals, Biotechnology & Life Sciences"                       | 3             | 24162.00             | 15197                | 40215                | 2.8                  | 0.6                    | 96.6                   | 3                     | 
+| Capital Goods                                                          | 35            | 7391.77              | 0                    | 87589                | 32.6                 | 7.1                    | 37.4                   | 4                     | 
+| Materials                                                              | 180           | 3208.86              | 0                    | 167000               | 24.9                 | 17.6                   | 2.5                    | 5                     | 
+| "Mining - Iron, Aluminum, Other Metals"                                | 3             | 2727.00              | 2615                 | 2820                 | 23.4                 | 65                     | 11.6                   | 6                     | 
+| Energy                                                                 | 5             | 2154.80              | 0                    | 6109                 | 4.9                  | 2.6                    | 32.5                   | 7                     | 
+| Chemicals                                                              | 32            | 1949.03              | 0                    | 10245                | 16.5                 | 11.6                   | 0                      | 8                     | 
+| Media                                                                  | 15            | 1534.47              | 2                    | 9438                 | 45.8                 | 5.6                    | 48.6                   | 9                     | 
+| Software & Services                                                    | 34            | 1368.94              | 1                    | 7090                 | 34.4                 | 11.3                   | 45.5                   | 10                    | 
+| Technology Hardware & Equipment                                        | 267           | 1362.46              | 0                    | 16100                | 24                   | 7.7                    | 18.5                   | 11                    | 
+| Tires                                                                  | 2             | 1011.00              | 288                  | 1734                 | 6.9                  | 2                      | 41.1                   | 12                    | 
+| "Food, Beverage & Tobacco"                                             | 128           | 868.21               | 0                    | 26836                | 21.9                 | 12                     | 10.7                   | 13                    | 
+| "Forest and Paper Products - Forestry, Timber, Pulp and Paper, Rubber" | 13            | 685.31               | 210                  | 918                  | 17.2                 | 74.5                   | 8.3                    | 14                    | 
+| Containers & Packaging                                                 | 8             | 373.50               | 0                    | 964                  | 74.6                 | 10.3                   | 2.6                    | 15                    | 
+| Commercial & Professional Services                                     | 44            | 119.66               | 19                   | 380                  | 3.2                  | 1.3                    | 0                      | 16                    | 
+| "Consumer Durables, Household and Personal Products"                   | 8             | 116.38               | 26                   | 409                  | 0.9                  | 0.2                    | 11.4                   | 17                    | 
+| Consumer Durables & Apparel                                            | 68            | 107.49               | 7                    | 2344                 | 14.4                 | 4.6                    | 16.3                   | 18                    | 
+| Food & Staples Retailing                                               | 24            | 61.71                | 0                    | 603                  | 39.2                 | 16.9                   | 6.4                    | 19                    | 
+| Utilities                                                              | 4             | 61.00                | 61                   | 61                   | 12.4                 | 1.9                    | 85.6                   | 20                    | 
+| Gas Utilities                                                          | 2             | 61.00                | 61                   | 61                   | 12.5                 | 2.7                    | 84.8                   | 20                    | 
+| Telecommunication Services                                             | 9             | 46.44                | 5                    | 88                   | 15.9                 | 2.9                    | 81.3                   | 22                    | 
+| Trading Companies & Distributors and Commercial Services & Supplies    | 6             | 39.83                | 19                   | 90                   | 0                    | 0                      | 0                      | 23                    | 
+| "Textiles, Apparel, Footwear and Luxury Goods"                         | 27            | 14.33                | 8                    | 16                   | 11.5                 | 1.4                    | 5.6                    | 24                    | 
+| Semiconductors & Semiconductor Equipment                               | 5             | 10.80                | 2                    | 29                   | 48.1                 | 43.6                   | 8.3                    | 25                    | 
+| Food & Beverage Processing                                             | 20            | 7.05                 | 0                    | 130                  | 27.3                 | 9.2                    | 13.5                   | 26                    | 
+| Retailing                                                              | 5             | 6.00                 | 3                    | 8                    | 75.8                 | 6.2                    | 18                     | 27                    | 
+| Semiconductors & Semiconductors Equipment                              | 3             | 1.00                 | 1                    | 1                    | 0                    | 0                      | 0                      | 28                    | 
+| Tobacco                                                                | 1             | 1.00                 | 1                    | 1                    | 57.1                 | 42.9                   | 0                      | 28                    | 
+| Household & Personal Products                                          | 2             | 0.00                 | 0                    | 0                    | 0                    | 0                      | 0                      | 30                    | 
 
 - What are the industries with the highest contribution to carbon emissions?
 ```sql
+WITH
+  industry_emissions AS (
+    SELECT
+      ig.industry_group,
+      COUNT(DISTINCT pe.id) as total_products,
+      -- Carbon footprint metrics
+      ROUND(AVG(pe.carbon_footprint_pcf), 2) as avg_carbon_footprint,
+      ROUND(SUM(pe.carbon_footprint_pcf), 2) as total_carbon_footprint,
+      -- Emission source averages
+      ROUND(AVG(pe.upstream_percent_total_pcf), 1) as avg_upstream_percent,
+      ROUND(AVG(pe.operations_percent_total_pcf), 1) as avg_operations_percent,
+      ROUND(AVG(pe.downstream_percent_total_pcf), 1) as avg_downstream_percent
+    FROM
+      product_emissions pe
+      JOIN industry_groups ig ON pe.industry_group_id = ig.id
+    GROUP BY
+      ig.industry_group
+  ),
+  total_emissions AS (
+    SELECT
+      SUM(total_carbon_footprint) as overall_total
+    FROM
+      industry_emissions
+  )
 SELECT
-    i_g.industry_group,
-    SUM(p_e.carbon_footprint_pcf) AS total_emissions
+  ie.industry_group,
+  ie.total_products,
+  ie.avg_carbon_footprint,
+  ie.total_carbon_footprint,
+  ROUND(
+    (ie.total_carbon_footprint / te.overall_total * 100),
+    2
+  ) as percentage_of_total_emissions,
+  ie.avg_upstream_percent,
+  ie.avg_operations_percent,
+  ie.avg_downstream_percent,
+  RANK() OVER (
+    ORDER BY
+      ie.total_carbon_footprint DESC
+  ) as emission_rank
 FROM
-    product_emissions p_e
-    LEFT JOIN industry_groups i_g ON p_e.industry_group_id = i_g.id
-GROUP BY
-    i_g.industry_group
+  industry_emissions ie
+  CROSS JOIN total_emissions te
 ORDER BY
-    total_emissions DESC
-LIMIT
-    10;
+  ie.total_carbon_footprint DESC;
 ```
-| industry_group                                   | total_emissions | 
-| -----------------------------------------------: | --------------: | 
-| Electrical Equipment and Machinery               | 9801558         | 
-| Automobiles & Components                         | 2582264         | 
-| Materials                                        | 577595          | 
-| Technology Hardware & Equipment                  | 363776          | 
-| Capital Goods                                    | 258712          | 
-| "Food, Beverage & Tobacco"                       | 111131          | 
-| "Pharmaceuticals, Biotechnology & Life Sciences" | 72486           | 
-| Chemicals                                        | 62369           | 
-| Software & Services                              | 46544           | 
-| Media                                            | 23017           | 
+| industry_group                                                         | total_products | avg_carbon_footprint | total_carbon_footprint | percentage_of_total_emissions | avg_upstream_percent | avg_operations_percent | avg_downstream_percent | emission_rank | 
+| ---------------------------------------------------------------------: | -------------: | -------------------: | ---------------------: | ----------------------------: | -------------------: | ---------------------: | ---------------------: | ------------: | 
+| Electrical Equipment and Machinery                                     | 11             | 891050.73            | 9801558.00             | 70.27                         | 4.5                  | 0.7                    | 22                     | 1             | 
+| Automobiles & Components                                               | 73             | 35373.48             | 2582264.00             | 18.51                         | 2                    | 0.6                    | 12.4                   | 2             | 
+| Materials                                                              | 161            | 3208.86              | 577595.00              | 4.14                          | 24.9                 | 17.6                   | 2.5                    | 3             | 
+| Technology Hardware & Equipment                                        | 195            | 1362.46              | 363776.00              | 2.61                          | 24                   | 7.7                    | 18.5                   | 4             | 
+| Capital Goods                                                          | 33             | 7391.77              | 258712.00              | 1.85                          | 32.6                 | 7.1                    | 37.4                   | 5             | 
+| "Food, Beverage & Tobacco"                                             | 101            | 868.21               | 111131.00              | 0.80                          | 21.9                 | 12                     | 10.7                   | 6             | 
+| "Pharmaceuticals, Biotechnology & Life Sciences"                       | 3              | 24162.00             | 72486.00               | 0.52                          | 2.8                  | 0.6                    | 96.6                   | 7             | 
+| Chemicals                                                              | 29             | 1949.03              | 62369.00               | 0.45                          | 16.5                 | 11.6                   | 0                      | 8             | 
+| Software & Services                                                    | 27             | 1368.94              | 46544.00               | 0.33                          | 34.4                 | 11.3                   | 45.5                   | 9             | 
+| Media                                                                  | 15             | 1534.47              | 23017.00               | 0.17                          | 45.8                 | 5.6                    | 48.6                   | 10            | 
+| Energy                                                                 | 5              | 2154.80              | 10774.00               | 0.08                          | 4.9                  | 2.6                    | 32.5                   | 11            | 
+| "Forest and Paper Products - Forestry, Timber, Pulp and Paper, Rubber" | 13             | 685.31               | 8909.00                | 0.06                          | 17.2                 | 74.5                   | 8.3                    | 12            | 
+| "Mining - Iron, Aluminum, Other Metals"                                | 3              | 2727.00              | 8181.00                | 0.06                          | 23.4                 | 65                     | 11.6                   | 13            | 
+| Consumer Durables & Apparel                                            | 52             | 107.49               | 7309.00                | 0.05                          | 14.4                 | 4.6                    | 16.3                   | 14            | 
+| Commercial & Professional Services                                     | 42             | 119.66               | 5265.00                | 0.04                          | 3.2                  | 1.3                    | 0                      | 15            | 
+| Containers & Packaging                                                 | 8              | 373.50               | 2988.00                | 0.02                          | 74.6                 | 10.3                   | 2.6                    | 16            | 
+| Tires                                                                  | 2              | 1011.00              | 2022.00                | 0.01                          | 6.9                  | 2                      | 41.1                   | 17            | 
+| Food & Staples Retailing                                               | 24             | 61.71                | 1481.00                | 0.01                          | 39.2                 | 16.9                   | 6.4                    | 18            | 
+| "Consumer Durables, Household and Personal Products"                   | 8              | 116.38               | 931.00                 | 0.01                          | 0.9                  | 0.2                    | 11.4                   | 19            | 
+| Telecommunication Services                                             | 9              | 46.44                | 418.00                 | 0.00                          | 15.9                 | 2.9                    | 81.3                   | 20            | 
+| "Textiles, Apparel, Footwear and Luxury Goods"                         | 16             | 14.33                | 387.00                 | 0.00                          | 11.5                 | 1.4                    | 5.6                    | 21            | 
+| Utilities                                                              | 2              | 61.00                | 244.00                 | 0.00                          | 12.4                 | 1.9                    | 85.6                   | 22            | 
+| Trading Companies & Distributors and Commercial Services & Supplies    | 6              | 39.83                | 239.00                 | 0.00                          | 0                    | 0                      | 0                      | 23            | 
+| Food & Beverage Processing                                             | 13             | 7.05                 | 141.00                 | 0.00                          | 27.3                 | 9.2                    | 13.5                   | 24            | 
+| Gas Utilities                                                          | 1              | 61.00                | 122.00                 | 0.00                          | 12.5                 | 2.7                    | 84.8                   | 25            | 
+| Semiconductors & Semiconductor Equipment                               | 4              | 10.80                | 54.00                  | 0.00                          | 48.1                 | 43.6                   | 8.3                    | 26            | 
+| Retailing                                                              | 4              | 6.00                 | 30.00                  | 0.00                          | 75.8                 | 6.2                    | 18                     | 27            | 
+| Semiconductors & Semiconductors Equipment                              | 3              | 1.00                 | 3.00                   | 0.00                          | 0                    | 0                      | 0                      | 28            | 
+| Tobacco                                                                | 1              | 1.00                 | 1.00                   | 0.00                          | 57.1                 | 42.9                   | 0                      | 29            | 
+| Household & Personal Products                                          | 2              | 0.00                 | 0.00                   | 0.00                          | 0                    | 0                      | 0                      | 30            | 
 
 - What are the companies with the highest contribution to carbon emissions?
 ```sql
+WITH
+  company_emissions AS (
+    SELECT
+      c.company_name,
+      ig.industry_group,
+      COUNT(DISTINCT pe.id) as total_products,
+      -- Carbon footprint metrics
+      ROUND(AVG(pe.carbon_footprint_pcf), 2) as avg_carbon_footprint,
+      ROUND(SUM(pe.carbon_footprint_pcf), 2) as total_carbon_footprint,
+      -- Emission source averages
+      ROUND(AVG(pe.upstream_percent_total_pcf), 1) as avg_upstream_percent,
+      ROUND(AVG(pe.operations_percent_total_pcf), 1) as avg_operations_percent,
+      ROUND(AVG(pe.downstream_percent_total_pcf), 1) as avg_downstream_percent
+    FROM
+      product_emissions pe
+      JOIN companies c ON pe.company_id = c.id
+      JOIN industry_groups ig ON pe.industry_group_id = ig.id
+    GROUP BY
+      c.company_name,
+      ig.industry_group
+  ),
+  total_emissions AS (
+    SELECT
+      SUM(total_carbon_footprint) as overall_total
+    FROM
+      company_emissions
+  )
 SELECT
-    companies.company_name,
-    SUM(p_e.carbon_footprint_pcf) AS total_emissions
+  ce.company_name,
+  ce.industry_group,
+  ce.total_products,
+  ce.avg_carbon_footprint,
+  ce.total_carbon_footprint,
+  ROUND(
+    (ce.total_carbon_footprint / te.overall_total * 100),
+    2
+  ) as percentage_of_total_emissions,
+  ce.avg_upstream_percent,
+  ce.avg_operations_percent,
+  ce.avg_downstream_percent,
+  RANK() OVER (
+    ORDER BY
+      ce.total_carbon_footprint DESC
+  ) as emission_rank
 FROM
-    product_emissions p_e
-    LEFT JOIN companies ON p_e.company_id = companies.id
-GROUP BY
-    companies.company_name
+  company_emissions ce
+  CROSS JOIN total_emissions te
 ORDER BY
-    total_emissions DESC
+  ce.total_carbon_footprint DESC
 LIMIT
-    10;
+  20;
 ```
-| company_name                            | total_emissions | 
-| --------------------------------------: | --------------: | 
-| "Gamesa Corporación Tecnológica, S.A."  | 9778464         | 
-| Daimler AG                              | 1594300         | 
-| Volkswagen AG                           | 655960          | 
-| "Mitsubishi Gas Chemical Company, Inc." | 212016          | 
-| "Hino Motors, Ltd."                     | 191687          | 
-| Arcelor Mittal                          | 167007          | 
-| Weg S/A                                 | 160655          | 
-| General Motors Company                  | 137007          | 
-| "Lexmark International, Inc."           | 132012          | 
-| "Daikin Industries, Ltd."               | 105600          | 
+| company_name                            | industry_group                                   | total_products | avg_carbon_footprint | total_carbon_footprint | percentage_of_total_emissions | avg_upstream_percent | avg_operations_percent | avg_downstream_percent | emission_rank | 
+| --------------------------------------: | -----------------------------------------------: | -------------: | -------------------: | ---------------------: | ----------------------------: | -------------------: | ---------------------: | ---------------------: | ------------: | 
+| "Gamesa Corporación Tecnológica, S.A."  | Electrical Equipment and Machinery               | 4              | 2444616.00           | 9778464.00             | 70.10                         | 0                    | 0                      | 0                      | 1             | 
+| Daimler AG                              | Automobiles & Components                         | 37             | 43089.19             | 1594300.00             | 11.43                         | 1.3                  | 0.4                    | 3.6                    | 2             | 
+| Volkswagen AG                           | Automobiles & Components                         | 25             | 26238.40             | 655960.00              | 4.70                          | 3                    | 0.9                    | 12.1                   | 3             | 
+| "Mitsubishi Gas Chemical Company, Inc." | Materials                                        | 8              | 13251.00             | 212016.00              | 1.52                          | 48.2                 | 25.5                   | 13.7                   | 4             | 
+| "Hino Motors, Ltd."                     | Automobiles & Components                         | 1              | 191687.00            | 191687.00              | 1.37                          | 2.9                  | 0.2                    | 96.8                   | 5             | 
+| Arcelor Mittal                          | Materials                                        | 2              | 83503.50             | 167007.00              | 1.20                          | 0                    | 0                      | 0                      | 6             | 
+| Weg S/A                                 | Capital Goods                                    | 2              | 70323.50             | 140647.00              | 1.01                          | 0                    | 0                      | 100                    | 7             | 
+| General Motors Company                  | Automobiles & Components                         | 4              | 34251.75             | 137007.00              | 0.98                          | 0.9                  | 0.3                    | 48.8                   | 8             | 
+| "Lexmark International, Inc."           | Technology Hardware & Equipment                  | 29             | 2276.07              | 132012.00              | 0.95                          | 0                    | 0                      | 0                      | 9             | 
+| "Daikin Industries, Ltd."               | Capital Goods                                    | 6              | 17600.00             | 105600.00              | 0.76                          | 2.9                  | 0.5                    | 96.7                   | 10            | 
+| CJ Cheiljedang                          | "Food, Beverage & Tobacco"                       | 6              | 15802.83             | 94817.00               | 0.68                          | 21.2                 | 61.7                   | 0.4                    | 11            | 
+| Waters Corporation                      | "Pharmaceuticals, Biotechnology & Life Sciences" | 3              | 24162.00             | 72486.00               | 0.52                          | 2.8                  | 0.6                    | 96.6                   | 12            | 
+| Quanta Computer                         | Technology Hardware & Equipment                  | 21             | 2772.24              | 58217.00               | 0.42                          | 0                    | 0                      | 0                      | 13            | 
+| LG Chem Ltd                             | Materials                                        | 7              | 4076.14              | 57066.00               | 0.41                          | 0                    | 0                      | 0                      | 14            | 
+| Akzo Nobel                              | Materials                                        | 28             | 1684.54              | 47167.00               | 0.34                          | 40.3                 | 13.2                   | 0                      | 15            | 
+| Xerox Corporation                       | Software & Services                              | 18             | 2538.44              | 45692.00               | 0.33                          | 23.8                 | 16.2                   | 60                     | 16            | 
+| "Ricoh Co., Ltd."                       | Technology Hardware & Equipment                  | 10             | 3550.50              | 35505.00               | 0.25                          | 0.8                  | 0.2                    | 9                      | 17            | 
+| LG Chem Ltd                             | Chemicals                                        | 3              | 5810.00              | 34860.00               | 0.25                          | 0                    | 0                      | 0                      | 18            | 
+| Xerox Corporation                       | Technology Hardware & Equipment                  | 9              | 2928.78              | 26359.00               | 0.19                          | 3.3                  | 29.6                   | 56                     | 19            | 
+| NEC Corporation                         | Technology Hardware & Equipment                  | 3              | 3976.33              | 23858.00               | 0.17                          | 2.4                  | 0.9                    | 63.3                   | 20            | 
 
 - What are the countries with the highest contribution to carbon emissions?
 ```sql
+WITH
+  country_emissions AS (
+    SELECT
+      co.country_name,
+      COUNT(DISTINCT pe.id) as total_products,
+      COUNT(DISTINCT c.id) as total_companies,
+      COUNT(DISTINCT ig.id) as total_industries,
+      -- Carbon footprint metrics
+      ROUND(AVG(pe.carbon_footprint_pcf), 2) as avg_carbon_footprint,
+      ROUND(SUM(pe.carbon_footprint_pcf), 2) as total_carbon_footprint,
+      -- Emission source averages
+      ROUND(AVG(pe.upstream_percent_total_pcf), 1) as avg_upstream_percent,
+      ROUND(AVG(pe.operations_percent_total_pcf), 1) as avg_operations_percent,
+      ROUND(AVG(pe.downstream_percent_total_pcf), 1) as avg_downstream_percent
+    FROM
+      product_emissions pe
+      JOIN countries co ON pe.country_id = co.id
+      JOIN companies c ON pe.company_id = c.id
+      JOIN industry_groups ig ON pe.industry_group_id = ig.id
+    GROUP BY
+      co.country_name
+  ),
+  total_emissions AS (
+    SELECT
+      SUM(total_carbon_footprint) as overall_total
+    FROM
+      country_emissions
+  )
 SELECT
-    countries.country_name,
-    SUM(p_e.carbon_footprint_pcf) AS total_emissions
+  ce.country_name,
+  ce.total_products,
+  ce.total_companies,
+  ce.total_industries,
+  ce.avg_carbon_footprint,
+  ce.total_carbon_footprint,
+  ROUND(
+    (ce.total_carbon_footprint / te.overall_total * 100),
+    2
+  ) as percentage_of_total_emissions,
+  ce.avg_upstream_percent,
+  ce.avg_operations_percent,
+  ce.avg_downstream_percent,
+  RANK() OVER (
+    ORDER BY
+      ce.total_carbon_footprint DESC
+  ) as emission_rank
 FROM
-    product_emissions p_e
-    LEFT JOIN countries ON p_e.country_id = countries.id
-GROUP BY
-    countries.country_name
+  country_emissions ce
+  CROSS JOIN total_emissions te
 ORDER BY
-    total_emissions DESC
-LIMIT
-    10;
+  ce.total_carbon_footprint DESC;
 ```
-| country_name | total_emissions | 
-| -----------: | --------------: | 
-| Spain        | 9786130         | 
-| Germany      | 2251225         | 
-| Japan        | 653237          | 
-| USA          | 518381          | 
-| South Korea  | 186965          | 
-| Brazil       | 169337          | 
-| Luxembourg   | 167007          | 
-| Netherlands  | 70417           | 
-| Taiwan       | 62875           | 
-| India        | 24574           | 
+| country_name   | total_products | total_companies | total_industries | avg_carbon_footprint | total_carbon_footprint | percentage_of_total_emissions | avg_upstream_percent | avg_operations_percent | avg_downstream_percent | emission_rank | 
+| -------------: | -------------: | --------------: | ---------------: | -------------------: | ---------------------: | ----------------------------: | -------------------: | ---------------------: | ---------------------: | ------------: | 
+| Spain          | 13             | 5               | 5                | 699009.29            | 9786130.00             | 70.16                         | 0                    | 0                      | 0                      | 1             | 
+| Germany        | 67             | 5               | 2                | 33600.37             | 2251225.00             | 16.14                         | 2.2                  | 0.8                    | 7.5                    | 2             | 
+| Japan          | 110            | 21              | 13               | 4600.26              | 653237.00              | 4.68                          | 16.5                 | 9                      | 31.6                   | 3             | 
+| USA            | 305            | 39              | 19               | 1332.60              | 518381.00              | 3.72                          | 15.1                 | 6.9                    | 14.5                   | 4             | 
+| South Korea    | 22             | 6               | 6                | 5665.61              | 186965.00              | 1.34                          | 5.7                  | 11.3                   | 10.3                   | 5             | 
+| Brazil         | 17             | 4               | 5                | 9407.61              | 169337.00              | 1.21                          | 11.6                 | 2.7                    | 19                     | 6             | 
+| Luxembourg     | 2              | 1               | 1                | 83503.50             | 167007.00              | 1.20                          | 0                    | 0                      | 0                      | 7             | 
+| Netherlands    | 35             | 1               | 2                | 2011.91              | 70417.00               | 0.50                          | 46.5                 | 13.5                   | 0                      | 8             | 
+| Taiwan         | 60             | 13              | 3                | 806.09               | 62875.00               | 0.45                          | 55.2                 | 7                      | 2                      | 9             | 
+| India          | 16             | 2               | 3                | 1535.88              | 24574.00               | 0.18                          | 9.1                  | 25.4                   | 2.9                    | 10            | 
+| Finland        | 35             | 2               | 3                | 554.59               | 21629.00               | 0.16                          | 28.9                 | 53.2                   | 12.7                   | 11            | 
+| South Africa   | 11             | 3               | 3                | 1119.27              | 12312.00               | 0.09                          | 11.5                 | 24.8                   | 0                      | 12            | 
+| United Kingdom | 32             | 8               | 6                | 243.92               | 9025.00                | 0.06                          | 25.4                 | 8.8                    | 19.9                   | 13            | 
+| Ireland        | 6              | 1               | 2                | 855.00               | 5130.00                | 0.04                          | 87                   | 13                     | 0                      | 14            | 
+| Sweden         | 26             | 5               | 6                | 174.35               | 4533.00                | 0.03                          | 63.7                 | 14.8                   | 13.8                   | 15            | 
+| France         | 20             | 7               | 8                | 129.29               | 2715.00                | 0.02                          | 25                   | 4.2                    | 42.2                   | 16            | 
+| Chile          | 3              | 1               | 2                | 518.33               | 1555.00                | 0.01                          | 17.6                 | 49.1                   | 0                      | 17            | 
+| Indonesia      | 1              | 1               | 1                | 721.00               | 721.00                 | 0.01                          | 0                    | 0                      | 0                      | 18            | 
+| Canada         | 6              | 1               | 2                | 63.67                | 382.00                 | 0.00                          | 44.4                 | 16.9                   | 38.6                   | 19            | 
+| Australia      | 6              | 1               | 1                | 39.83                | 239.00                 | 0.00                          | 0                    | 0                      | 0                      | 20            | 
+| Malaysia       | 4              | 1               | 1                | 58.75                | 235.00                 | 0.00                          | 0                    | 0                      | 0                      | 21            | 
+| China          | 6              | 4               | 4                | 19.63                | 157.00                 | 0.00                          | 0                    | 0                      | 0                      | 22            | 
+| Switzerland    | 28             | 6               | 6                | 3.58                 | 143.00                 | 0.00                          | 28.1                 | 8.5                    | 25.8                   | 23            | 
+| Italy          | 23             | 3               | 2                | 0.78                 | 18.00                  | 0.00                          | 38.2                 | 13.6                   | 4.7                    | 24            | 
+| Belgium        | 8              | 1               | 2                | 1.00                 | 8.00                   | 0.00                          | 4.3                  | 58.2                   | 0                      | 25            | 
+| Greece         | 1              | 1               | 1                | 1.00                 | 1.00                   | 0.00                          | 57.1                 | 42.9                   | 0                      | 26            | 
+| Lithuania      | 1              | 1               | 1                | 0.00                 | 0.00                   | 0.00                          | 0                    | 0                      | 0                      | 27            | 
+| Colombia       | 2              | 1               | 1                | 0.00                 | 0.00                   | 0.00                          | 0                    | 0                      | 0                      | 27            | 
 
 - What is the trend of carbon footprints (PCFs) over the years?
 ```sql
+WITH
+  yearly_stats AS (
+    SELECT
+      pe.year,
+      -- General statistics
+      COUNT(DISTINCT pe.id) as total_products,
+      COUNT(DISTINCT pe.company_id) as total_companies,
+      COUNT(DISTINCT pe.industry_group_id) as total_industries,
+      -- Carbon footprint metrics
+      ROUND(AVG(pe.carbon_footprint_pcf), 2) as avg_carbon_footprint,
+      ROUND(MIN(pe.carbon_footprint_pcf), 2) as min_carbon_footprint,
+      ROUND(MAX(pe.carbon_footprint_pcf), 2) as max_carbon_footprint,
+      -- Average emission percentages
+      ROUND(AVG(pe.upstream_percent_total_pcf), 1) as avg_upstream_percent,
+      ROUND(AVG(pe.operations_percent_total_pcf), 1) as avg_operations_percent,
+      ROUND(AVG(pe.downstream_percent_total_pcf), 1) as avg_downstream_percent
+    FROM
+      product_emissions pe
+    GROUP BY
+      pe.year
+  ),
+  year_over_year_change AS (
+    SELECT
+      year,
+      total_products,
+      total_companies,
+      total_industries,
+      avg_carbon_footprint,
+      min_carbon_footprint,
+      max_carbon_footprint,
+      avg_upstream_percent,
+      avg_operations_percent,
+      avg_downstream_percent,
+      -- Calculate year-over-year changes
+      ROUND(
+        (
+          (
+            avg_carbon_footprint - LAG(avg_carbon_footprint) OVER (
+              ORDER BY
+                year
+            )
+          ) / LAG(avg_carbon_footprint) OVER (
+            ORDER BY
+              year
+          ) * 100
+        ),
+        2
+      ) as pcf_change_percent
+    FROM
+      yearly_stats
+  )
 SELECT
-    year,
-    SUM(carbon_footprint_pcf) AS total_emissions
+  year,
+  total_products,
+  total_companies,
+  total_industries,
+  avg_carbon_footprint,
+  min_carbon_footprint,
+  max_carbon_footprint,
+  pcf_change_percent,
+  avg_upstream_percent,
+  avg_operations_percent,
+  avg_downstream_percent
 FROM
-    product_emissions
-GROUP BY
-    year
+  year_over_year_change
 ORDER BY
-    year ASC;
+  year;
 ```
-| year | total_emissions | 
-| ---: | --------------: | 
-| 2013 | 503857          | 
-| 2014 | 624226          | 
-| 2015 | 10840415        | 
-| 2016 | 1640182         | 
-| 2017 | 340271          | 
+| year | total_products | total_companies | total_industries | avg_carbon_footprint | min_carbon_footprint | max_carbon_footprint | pcf_change_percent | avg_upstream_percent | avg_operations_percent | avg_downstream_percent | 
+| ---: | -------------: | --------------: | ---------------: | -------------------: | -------------------: | -------------------: | -----------------: | -------------------: | ---------------------: | ---------------------: | 
+| 2013 | 179            | 72              | 14               | 2399.32              | 0                    | 167000               | [NULL]             | 29.5                 | 13.5                   | 20.8                   | 
+| 2014 | 190            | 68              | 14               | 2457.58              | 0                    | 87589                | 2.43               | 20.3                 | 7.9                    | 10.9                   | 
+| 2015 | 217            | 64              | 22               | 43188.90             | 0                    | 3718044              | 1657.38            | 22.5                 | 10.9                   | 16.8                   | 
+| 2016 | 218            | 55              | 13               | 6891.52              | 0                    | 191687               | -84.04             | 15.7                 | 7.9                    | 9.5                    | 
+| 2017 | 62             | 12              | 6                | 4050.85              | 0                    | 99075                | -41.22             | 17                   | 12.3                   | 20.8                   | 
 
 - Which industry groups has demonstrated the most notable decrease in carbon footprints (PCFs) over time?
 ```sql
